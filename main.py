@@ -35,7 +35,6 @@ if "image" not in st.session_state:
     st.session_state.image = None
 
 st.title("Wikipedia-Chat")
-
 with st.sidebar:
     st.header('Wikipedia-Titel')
     st.text_input("Gib hier den Titel der Wikipedia-Seite ein:", key="option")
@@ -87,7 +86,7 @@ if prompt := st.chat_input("Frag, was du möchtest!"):
     with st.chat_message("assistant"):
         stream = openai.chat.completions.create(
             frequency_penalty=0.5,
-            max_completion_tokens=400,
+            max_tokens=400,
             model=MODEL,
             presence_penalty= 0.5,
             messages=[
