@@ -86,12 +86,17 @@ if prompt := st.chat_input("Frag, was du möchtest!"):
     #with st.chat_message("assistant", avatar="alien.png"):
     with st.chat_message("assistant"):
         stream = openai.chat.completions.create(
+            frequency_penalty=0.5,
+            max_completion_tokens=400,
             model=MODEL,
+            presence_penalty= 0.5,
             messages=[
                 {"role": m["role"], "content": m["content"]}
                 for m in st.session_state.messages
             ],
             temperature=0.0,
+            top_p = 0.9,
+            stop=["\n", "END"],
             stream=True,
         )
         response = st.write_stream(stream)
