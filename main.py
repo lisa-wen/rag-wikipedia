@@ -95,7 +95,6 @@ if prompt := st.chat_input("Frag, was du möchtest!"):
             ],
             temperature=0.0,
             top_p = 0.9,
-            stop=["\n", "END"],
             stream=True,
         )
         response = st.write_stream(stream)
