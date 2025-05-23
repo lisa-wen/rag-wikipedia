@@ -1,4 +1,6 @@
 import os
+import urllib
+
 import openai
 import streamlit as st
 from dotenv import load_dotenv
@@ -6,11 +8,10 @@ from mediawikiapi import MediaWikiAPI
 import tiktoken
 
 load_dotenv()
-
 openai.api_key = os.getenv('API_KEY')
 user_agent = "Wikipedia-API Example (test@example.com)"
 MODEL = 'gpt-4o-mini'
-MAX_TOKENS = 40000
+MAX_TOKENS = 50000
 
 wikipedia = MediaWikiAPI()
 wikipedia.config.user_agent = user_agent
@@ -40,19 +41,29 @@ with st.sidebar:
     st.text_input("Gib hier den Titel der Wikipedia-Seite ein:", key="option")
     if st.button("Senden"):
         st.session_state.messages = []
-        page = wikipedia.page(st.session_state.option)
+        title = str(st.session_state.option).replace(" ","+")
+        try:
+            page = wikipedia.page(title)
+        except:
+            title = "Monchhichi"
+            page = wikipedia.page(title)
+            st.text("Suche fehlgeschlagen. Hier ist das Monchichi")
         if page.images:
             st.session_state.image = page.images[0]
         page_links = page.references
         content = page.content
         encoding = tiktoken.encoding_for_model('gpt-4o-mini')
         num_tokens = len(encoding.encode(content))
+        if title == "Monchhichi":
+            summary = wikipedia.summary("Monchhichi", sentences=50)
+        else:
+            summary = wikipedia.summary(title, sentences=50)
         if num_tokens > MAX_TOKENS:
-            st.session_state.document = wikipedia.summary(st.session_state.option, sentences=50)
+            st.session_state.document = summary
         else:
             st.session_state.document = content
         st.session_state.link = f"# [{page.title}]({page.url})"
-        st.session_state.abstract = wikipedia.summary(st.session_state.option, sentences=5)
+        st.session_state.abstract = wikipedia.summary(title, sentences=5)
 
     if st.session_state.link is not None:
         st.markdown(st.session_state.link)
@@ -64,11 +75,11 @@ with st.sidebar:
 for message in st.session_state.messages:
     if message["role"] in ["user", "assistant"]:
         if message["role"] == "user":
-            #with st.chat_message("user", avatar=""):
+            #with st.chat_message("user", avatar="girl.png"):
             with st.chat_message("user"):
                 st.markdown(message["content"])
         else:
-            #with st.chat_message("assistant", avatar=""):
+            #with st.chat_message("assistant", avatar="alien.png"):
             with st.chat_message("assistant"):
                 st.markdown(message["content"])
 
@@ -78,7 +89,7 @@ st.session_state.messages.append({"role": "system", "content": content_start+con
 
 if prompt := st.chat_input("Frag, was du möchtest!"):
     st.session_state.messages.append({"role": "user", "content": prompt})
-    #with st.chat_message("user", avatar=""):
+    #with st.chat_message("user", avatar="girl.png"):
     with st.chat_message("user"):
         st.markdown(prompt)
 
@@ -86,7 +97,7 @@ if prompt := st.chat_input("Frag, was du möchtest!"):
     with st.chat_message("assistant"):
         stream = openai.chat.completions.create(
             frequency_penalty=0.5,
-            max_tokens=400,
+            max_tokens=500,
             model=MODEL,
             presence_penalty= 0.5,
             messages=[
@@ -94,7 +105,7 @@ if prompt := st.chat_input("Frag, was du möchtest!"):
                 for m in st.session_state.messages
             ],
             temperature=0.0,
-            top_p = 0.9,
+            top_p=0.3,
             stream=True,
         )
         response = st.write_stream(stream)
