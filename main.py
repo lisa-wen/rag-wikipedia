@@ -11,7 +11,7 @@ load_dotenv()
 openai.api_key = os.getenv('API_KEY')
 
 # LLM-Konfiguration
-MODEL = 'gpt-4o-mini'
+MODEL = 'gpt-4o-mini-2024-07-18'
 
 # Wikipedia-API-Konfiguration
 MAX_TOKENS = 50000
@@ -53,7 +53,7 @@ with st.sidebar:
     # Auswahl der Zielgruppe
     age_group = st.selectbox(
         "Wähle eine Altersgruppe aus:",
-        options=["Kinder (Kita)", "Kinder (Grundschule)", "Jugendliche (Weiterführende Schule", "Junge Erwachsene",
+        options=["Kinder (Kita)", "Kinder (Grundschule)", "Jugendliche (Weiterführende Schule)", "Junge Erwachsene",
                  "Erwachsene", "Senioren"]
     )
     st.session_state.age_group = age_group
@@ -134,11 +134,13 @@ if st.session_state.document is not None and not any(m["role"] == "system" for m
 # Nutzer-Eingabe verarbeiten
 if prompt := st.chat_input("Frag, was du möchtest!"):
     st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user", avatar="girl.png"):
+    #with st.chat_message("user", avatar="girl.png"):
+    with st.chat_message("user"):
         st.markdown(prompt)
 
     # Antwort vom OpenAI-Modell streamen
-    with st.chat_message("assistant", avatar="alien.png"):
+    #with st.chat_message("assistant", avatar="alien.png"):
+    with st.chat_message("assistant"):
         stream = openai.chat.completions.create(
             frequency_penalty=0.5,
             max_tokens=500,
