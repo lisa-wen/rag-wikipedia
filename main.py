@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 from mediawikiapi import MediaWikiAPI
 import tiktoken
 from openai import OpenAI
+from openai.types.chat import ChatCompletionMessageParam
+from typing import cast
 
 # Umgebungsvariablen laden und API-Key setzen
 load_dotenv()
@@ -52,8 +54,8 @@ st.title("Wikipedia-Chat")
 # Auswahl der Zielgruppe
 
 age_group = st.selectbox(
-    "Für welche Zielgruppe soll der Chat antworten geben."
-    "Wähle eine Altersgruppe aus:",
+    "Für welche Zielgruppe soll der Chat antworten geben? "
+    "Wähle eine Zielgruppe aus:",
     options=["Kinder (Kita)", "Kinder (Grundschule)", "Jugendliche (Weiterführende Schule)", "Junge Erwachsene",
              "Erwachsene", "Senioren"]
 )
@@ -121,8 +123,8 @@ for message in st.session_state.messages:
             with st.chat_message("assistant", avatar="alien.png"):
                 st.markdown(message["content"])
 
-# Systemnachricht hinzufügen, wenn noch nicht vorhanden
-if st.session_state.document is not None and not any(m["role"] == "system" for m in st.session_state.messages):
+# Systemnachricht hinzufügen bzw. aktualisieren (aktuelle Zielgruppe)
+if st.session_state.document is not None:
     content_template = ('Du bist ein freundlicher Assistent für die Zielgruppe {age_group}. '
                         'Du gibst Auskünfte auf Basis des folgenden Wikipedia-Textes für diese Zielgruppe: {'
                         'wikipedia_article}'
@@ -131,7 +133,8 @@ if st.session_state.document is not None and not any(m["role"] == "system" for m
         wikipedia_article=st.session_state.document,
         age_group=st.session_state.age_group
     )
-    st.session_state.messages.append(
+    st.session_state.messages = [m for m in st.session_state.messages if m["role"] != "system"]
+    st.session_state.messages.insert(0,
         {
             "role": "system",
             "content": system_message
@@ -145,6 +148,15 @@ if prompt := st.chat_input("Frag, was du möchtest!"):
         st.markdown(prompt)
 
     # Antwort vom OpenAI-Modell streamen
+
+    messages = cast(
+        list[ChatCompletionMessageParam],
+        [
+            {"role": m["role"], "content": m["content"]}
+            for m in st.session_state.messages
+        ],
+    )
+
     #with st.chat_message("assistant", avatar="alien.png"):
     with st.chat_message("assistant"):
         stream = client.chat.completions.create(
@@ -152,10 +164,7 @@ if prompt := st.chat_input("Frag, was du möchtest!"):
             max_tokens=500,
             model=MODEL,
             presence_penalty=0.5,
-            messages=[
-                {"role": m["role"], "content": m["content"]}
-                for m in st.session_state.messages
-            ],
+            messages=messages,
             temperature=0.0,
             top_p=0.3,
             stream=True,
