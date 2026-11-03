@@ -1,17 +1,22 @@
 # Notwendige Bibliotheken importieren
 import os
-import openai
 import streamlit as st
 from dotenv import load_dotenv
 from mediawikiapi import MediaWikiAPI
 import tiktoken
+from openai import OpenAI
 
 # Umgebungsvariablen laden und API-Key setzen
 load_dotenv()
-openai.api_key = os.getenv('API_KEY')
 
 # LLM-Konfiguration
 MODEL = 'gpt-4o-mini-2024-07-18'
+
+# LLM-Client konfigurieren
+client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=os.getenv('API_KEY'),  # or os.environ["OPENROUTER_API_KEY"]
+)
 
 # Wikipedia-API-Konfiguration
 MAX_TOKENS = 50000
@@ -44,19 +49,20 @@ if "age_group" not in st.session_state:
 
 # Titel der App
 st.title("Wikipedia-Chat")
+# Auswahl der Zielgruppe
+
+age_group = st.selectbox(
+    "Für welche Zielgruppe soll der Chat antworten geben."
+    "Wähle eine Altersgruppe aus:",
+    options=["Kinder (Kita)", "Kinder (Grundschule)", "Jugendliche (Weiterführende Schule)", "Junge Erwachsene",
+             "Erwachsene", "Senioren"]
+)
+st.session_state.age_group = age_group
 
 # Seitenleiste zur Eingabe
 with st.sidebar:
     st.header('Wikipedia-Titel')
     st.text_input("Gib hier den Titel der Wikipedia-Seite ein:", key="option")
-
-    # Auswahl der Zielgruppe
-    age_group = st.selectbox(
-        "Wähle eine Altersgruppe aus:",
-        options=["Kinder (Kita)", "Kinder (Grundschule)", "Jugendliche (Weiterführende Schule)", "Junge Erwachsene",
-                 "Erwachsene", "Senioren"]
-    )
-    st.session_state.age_group = age_group
 
     # Button zur Auslösung der Suche
     if st.button("Senden"):
@@ -141,7 +147,7 @@ if prompt := st.chat_input("Frag, was du möchtest!"):
     # Antwort vom OpenAI-Modell streamen
     #with st.chat_message("assistant", avatar="alien.png"):
     with st.chat_message("assistant"):
-        stream = openai.chat.completions.create(
+        stream = client.chat.completions.create(
             frequency_penalty=0.5,
             max_tokens=500,
             model=MODEL,
